@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ChildOutOfRange" xml:space="preserve">
+    <value>Tried to insert a child element that does not belong to the master</value>
+    <comment>This is thrown whenever a child element is being tried to be inserted into a master element, but either the start, end or both positions are out of the range of the masters element.</comment>
+  </data>
+  <data name="DocNotInitialized" xml:space="preserve">
+    <value>Document has not been initialized.</value>
+    <comment>Thrown when the user tries to access a document before it was initiliazed</comment>
+  </data>
+  <data name="FileClosed" xml:space="preserve">
+    <value>The file handler for the document that is to be parsed, has been closed or was never opened.</value>
+    <comment>This indicates likely a programmers mistake, where the File handler has been thrown away before it was finished being used.</comment>
+  </data>
+  <data name="FileStreamAlreadyOpen" xml:space="preserve">
+    <value>Can not open the file stream as it has been already opened before.</value>
+    <comment>A warning informing that the function call was pointless. Could be used to identify multiple calls to the same function which was pointless.</comment>
+  </data>
+  <data name="InvalidDecodeState" xml:space="preserve">
+    <value>The parser state was invalid when an element tried to decode itself</value>
+    <comment>Make sure the parser is still valid and the filestream open when trying to decode any element.</comment>
+  </data>
+  <data name="InvalidEbmlFile" xml:space="preserve">
+    <value>The parsed document is not a valid EBML file. It is either missing the head or the body element.</value>
+    <comment>Should be expanded to be thrown whenever there is a problem rendering the entire document to be invalid, not only when the body or head is missing.</comment>
+  </data>
+  <data name="InvalidIdValue" xml:space="preserve">
+    <value>The parsed id was invalid and could not be read.</value>
+    <comment>There are multiple validation steps for an ID. All of them have to be fulfilled otherwise the ID can not be looked at reliably.</comment>
+  </data>
+  <data name="InvalidRootType" xml:space="preserve">
+    <value>A root element was not a master element. All root elements must be master elements.</value>
+    <comment>This is thrown when the passed document is invalid.</comment>
+  </data>
+  <data name="MissingRootFactory" xml:space="preserve">
+    <value>A critical EBML Factory has not been registered. For the document to be parsed correctly, make sure at least the Root Elements are registered.</value>
+    <comment>The ebml document is invalid if the root elements are not parsed. Therefore we throw this exception.</comment>
+  </data>
+  <data name="NoChildLeft" xml:space="preserve">
+    <value>No children left to parse.</value>
+    <comment>Thrown when a child was tried to being parsed, when there are no children left to be parsed in the master element.</comment>
+  </data>
+  <data name="ParentNotParsed" xml:space="preserve">
+    <value>Tried to add a child element for which the parent has not been parsed yet. </value>
+    <comment>This happens whenever you parse a child element before parsing the parent element. We could automatically resolve this by going back and parsing the parent if it hasn't been parsed yet. But for now we throw an error.</comment>
+  </data>
+  <data name="PropertyNotOverridable" xml:space="preserve">
+    <value>Can not override the specified Property</value>
+    <comment>Thrown when the user tried to set the head element of a document, when it alredy was set. Could be changed in the future to support writing but I think it should be solved differently</comment>
+  </data>
+  <data name="TriedToParseEmptyFile" xml:space="preserve">
+    <value>Empty file was tried to be parsed. This is impossible</value>
+    <comment>Thrown when the passed file has no content.</comment>
+  </data>
+</root>

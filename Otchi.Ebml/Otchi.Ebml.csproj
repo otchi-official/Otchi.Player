@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU</Platforms>
+    <FileUpgradeFlags>40</FileUpgradeFlags>
+    <OldToolsVersion>Current</OldToolsVersion>
+    <Version>0.2.45</Version>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageOutputPath>F:\Nuget Feed</PackageOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Otchi.BitOperations" Version="0.0.1" />
+  </ItemGroup>
+
+</Project>
