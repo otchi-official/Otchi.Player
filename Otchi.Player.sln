@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29519.87
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.Ebml", "Otchi.Ebml\Otchi.Ebml.csproj", "{891AC652-2DEE-40E7-9C63-4505354E756A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Otchi.Ebml", "Otchi.Ebml\Otchi.Ebml.csproj", "{891AC652-2DEE-40E7-9C63-4505354E756A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.Matroska", "Otchi.Matroska\Otchi.Matroska.csproj", "{56B54CD9-9CF0-42B4-8896-B8DF74D640F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.Core", "Otchi.Core\Otchi.Core.csproj", "{8418F274-7DAA-40BC-93D8-618F15C641D6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{891AC652-2DEE-40E7-9C63-4505354E756A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{891AC652-2DEE-40E7-9C63-4505354E756A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{891AC652-2DEE-40E7-9C63-4505354E756A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56B54CD9-9CF0-42B4-8896-B8DF74D640F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56B54CD9-9CF0-42B4-8896-B8DF74D640F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56B54CD9-9CF0-42B4-8896-B8DF74D640F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56B54CD9-9CF0-42B4-8896-B8DF74D640F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8418F274-7DAA-40BC-93D8-618F15C641D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8418F274-7DAA-40BC-93D8-618F15C641D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8418F274-7DAA-40BC-93D8-618F15C641D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8418F274-7DAA-40BC-93D8-618F15C641D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

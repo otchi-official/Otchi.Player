@@ -3,17 +3,20 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <Nullable>enable</Nullable>
-    <Platforms>AnyCPU</Platforms>
-    <FileUpgradeFlags>40</FileUpgradeFlags>
-    <OldToolsVersion>Current</OldToolsVersion>
     <Version>0.0.1</Version>
+    <Authors>Jorge Paravicini</Authors>
+    <Company>Otchi</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PackageOutputPath>F:\Nuget Feed</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Otchi.BitOperations" Version="0.0.1" />
+    <PackageReference Include="MonoTorrent" Version="1.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Otchi.Matroska\Otchi.Matroska.csproj" />
   </ItemGroup>
 
 </Project>

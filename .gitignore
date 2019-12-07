@@ -5,3 +5,7 @@
 /Otchi.Ebml/obj
 /Otchi.Ebml/bin/Debug/netstandard2.1
 /.vs/Otchi.Player
+/Otchi.Core/bin/Debug/netstandard2.1
+/Otchi.Core/obj
+/Otchi.Matroska/bin/Debug/netstandard2.1
+/Otchi.Matroska/obj
