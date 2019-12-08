@@ -9,3 +9,6 @@
 /Otchi.Core/obj
 /Otchi.Matroska/bin/Debug/netstandard2.1
 /Otchi.Matroska/obj
+/Otchi.Console/bin/Debug/netcoreapp3.0
+/Otchi.Console/obj
+*/obj/*
