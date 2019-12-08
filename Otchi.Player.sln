@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.Matroska", "Otchi.Mat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.Core", "Otchi.Core\Otchi.Core.csproj", "{8418F274-7DAA-40BC-93D8-618F15C641D6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.Console", "Otchi.Console\Otchi.Console.csproj", "{0A2ECD8A-2368-4139-9C70-8EBE350755A0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{8418F274-7DAA-40BC-93D8-618F15C641D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8418F274-7DAA-40BC-93D8-618F15C641D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8418F274-7DAA-40BC-93D8-618F15C641D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A2ECD8A-2368-4139-9C70-8EBE350755A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A2ECD8A-2368-4139-9C70-8EBE350755A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A2ECD8A-2368-4139-9C70-8EBE350755A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A2ECD8A-2368-4139-9C70-8EBE350755A0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -22,7 +22,7 @@ namespace Otchi.Core
 
     public class MatroskaPlayer
     {
-        private List<long> _hashedPieces = new List<long>();
+        private SortedSet<long> _hashedPieces = new SortedSet<long>();
         private readonly MonoTorrent.Client.TorrentManager _manager;
         private EbmlParser? _parser;
         private EbmlDocument? _document;
@@ -75,7 +75,7 @@ namespace Otchi.Core
 
             lock(_indexLock)
             {
-                if (_isIndexing) return;
+                if (_isIndexing || !_hashedPieces.Contains(_indexerCount)) return;
                 _isIndexing = true;
             }
             Console.WriteLine("Entering");
@@ -94,6 +94,7 @@ namespace Otchi.Core
                 catch (DecodeException exception)
                 {
                     Console.WriteLine(exception.Message);
+                    Console.WriteLine(_document);
                 }
                 if (cues != null)
                 {
@@ -101,16 +102,18 @@ namespace Otchi.Core
                     if (cues.Decoded)
                     {
                         PlayerStatus = MatroskaPlayerStatus.Playable;
+                        Console.WriteLine("Ready to start");
                     }
                 }
                 else
                 {
+
                     if (await _document.Body.TryGetChild<SeekHead>(_parser) is {} seek)
                     {
                         await seek.Decode(_parser);
                         if (seek.Decoded)
                         {
-
+                            Console.WriteLine("TODO: Seek cues");
                         }
                     }
                 }
@@ -120,6 +123,7 @@ namespace Otchi.Core
             finally
             {
                 Console.WriteLine("Exiting");
+                _indexerCount += 1;
                 _isIndexing = false;
             }
         }

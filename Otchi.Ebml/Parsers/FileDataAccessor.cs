@@ -1,5 +1,7 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading.Tasks;
+using Otchi.Ebml.Exceptions;
 
 namespace Otchi.Ebml.Parsers
 {
@@ -16,7 +18,14 @@ namespace Otchi.Ebml.Parsers
         public async Task<int> ReadAsync(byte[] buffer, int bufferOffset, int count, long offset)
         {
             _fileStream.Seek(offset, SeekOrigin.Begin);
-            return await _fileStream.ReadAsync(buffer, bufferOffset, count).ConfigureAwait(false);
+            try
+            {
+                return await _fileStream.ReadAsync(buffer, bufferOffset, count).ConfigureAwait(false);
+            }
+            catch (ArgumentException)
+            {
+                throw new DecodeException();
+            }
         }
 
         public async Task<int> ReadAsync(byte[] buffer, int bufferOffset, int count)

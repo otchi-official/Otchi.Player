@@ -26,6 +26,7 @@ namespace Otchi.Matroska.Factories
             }
         }
 
+        public static FactoriesDict AllMatroskaFactories { get; } = Factories;
 
         private static readonly List<long> MatroskaSegmentIds = new List<long>
         {
