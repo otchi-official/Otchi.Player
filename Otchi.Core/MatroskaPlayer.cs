@@ -27,10 +27,8 @@ namespace Otchi.Core
         private EbmlParser? _parser;
         private EbmlDocument? _document;
         private readonly SemaphoreSlim _documentCreateSemaphore = new SemaphoreSlim(1, 1);
-        private readonly SemaphoreSlim _documentParserSemaphore = new SemaphoreSlim(1, 1);
         private MonotorrentDataAccessor _dataAccessor;
         public MatroskaPlayerStatus PlayerStatus { get; private set; } = MatroskaPlayerStatus.LoadingMetadata;
-        private int _indexerCount = 0;
         private bool _isIndexing = false;
         private object _indexLock = new object();
 
@@ -66,16 +64,16 @@ namespace Otchi.Core
 
             if (_document?.Body is null || _document?.Head is null) return;
 
-            await TryIndexDocument();
+            await TryIndexDocument(eventArgs.PieceIndex);
         }
 
-        private async Task TryIndexDocument()
+        private async Task TryIndexDocument(int index)
         {
             if (_parser is null) throw new InvalidOperationException("Can't parse document if parser has not been set yet");
 
             lock(_indexLock)
             {
-                if (_isIndexing || !_hashedPieces.Contains(_indexerCount)) return;
+                if (_isIndexing || !_hashedPieces.Contains(index)) return;
                 _isIndexing = true;
             }
             Console.WriteLine("Entering");
@@ -83,8 +81,8 @@ namespace Otchi.Core
             try
             {
                 if (PlayerStatus == MatroskaPlayerStatus.Playable) return;
-                Console.WriteLine($"Flushing {_indexerCount}");
-                await _manager.Engine.DiskManager.FlushAsync(_manager.Torrent, _indexerCount).ConfigureAwait(false);
+                Console.WriteLine($"Flushing {index}");
+                await _manager.Engine.DiskManager.FlushAsync(_manager.Torrent, index).ConfigureAwait(false);
 
                 Cues? cues = null;
                 try
@@ -108,12 +106,19 @@ namespace Otchi.Core
                 else
                 {
 
-                    if (await _document.Body.TryGetChild<SeekHead>(_parser) is {} seek)
+                    if (await _document.Body.TryGetChild<SeekHead>(_parser) is {} seekMaster)
                     {
-                        await seek.Decode(_parser);
-                        if (seek.Decoded)
+                        await seekMaster.Decode(_parser);
+                        if (seekMaster.Decoded)
                         {
-                            Console.WriteLine("TODO: Seek cues");
+                            foreach (Seek seek in seekMaster.Values)
+                            {
+                                if (seek.SeekId == (ulong)MatroskaIds.CuesId.Size)
+                                {
+                                    var element = await _parser.ParseElementAt((long)seek.SeekPosition!);
+                                    Console.WriteLine(element);
+                                }
+                            }
                         }
                     }
                 }
@@ -123,8 +128,8 @@ namespace Otchi.Core
             finally
             {
                 Console.WriteLine("Exiting");
-                _indexerCount += 1;
                 _isIndexing = false;
+                await TryIndexDocument(index + 1);
             }
         }
 
