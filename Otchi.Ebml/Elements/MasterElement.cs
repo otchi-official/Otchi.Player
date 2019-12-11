@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -13,13 +14,11 @@ namespace Otchi.Ebml.Elements
 {
     public abstract class MasterElement : EbmlElement, IReadOnlyDictionary<long, EbmlElement>, IDisposable
     {
-        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
-
         #region Fields
 
+        private readonly SemaphoreSlim _insertSemaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _decodeSemaphore = new SemaphoreSlim(1, 1);
         private readonly SortedList<long, EbmlElement> _children = new SortedList<long, EbmlElement>();
-        private long _parserPosition = 0;
-        private readonly SemaphoreSlim _parserSemaphoreSlim = new SemaphoreSlim(1, 1);
 
         #endregion
 
@@ -34,6 +33,7 @@ namespace Otchi.Ebml.Elements
         protected MasterElement(VInt dataSize, long position, EbmlElement? parent)
             : base(dataSize, position, parent)
         {
+            _nextDecodePosition = DataPosition;
         }
 
         #endregion
@@ -57,56 +57,44 @@ namespace Otchi.Ebml.Elements
                 Console.WriteLine($"Element {this} contains no children");
                 return;
             }
+            var position = DataPosition;
+            while (position < EndPosition)
+            {
+                var elementReadOperation = await parser.ParseElementAt(position, Parent).ConfigureAwait(false);
+                if (recursive) 
+                    await (elementReadOperation.Value?.Decode(parser) ?? Task.CompletedTask).ConfigureAwait(false);
+                position = elementReadOperation.Position;
+            }
 
-            await _parserSemaphoreSlim.WaitAsync().ConfigureAwait(false);
+            Decoded = true;
+        }
 
+        public async Task<ReadOperation<EbmlElement?>> DecodeChildAt(EbmlParser parser, long index)
+        {
+            // All decoding operations will come through here. Hence we lock this function so we can synchronize all calls related to decoding an element.
+            await _decodeSemaphore.WaitAsync();
             try
             {
-                _parserPosition = DataPosition;
-                while (_parserPosition < EndPosition)
+                if (parser is null) throw new ArgumentNullException(nameof(parser));
+                if (index < DataPosition || index >= EndPosition) throw new ArgumentOutOfRangeException(nameof(index));
+
+                // Return the parsed element if it already exists.
+                var child = _children[index];
+                if (child != null)
                 {
-                    var element = await parser.ParseElementAt(_parserPosition, Parent).ConfigureAwait(false);
-                    if (element == null)
-                    {
-                        _parserPosition = parser.DataAccessor.Position;
-                        continue;
-                    }
-                    if (recursive) await element.Decode(parser).ConfigureAwait(false);
-                    _parserPosition = parser.DataAccessor.Position;
-                    InsertElement(element);
+                    return new ReadOperation<EbmlElement?>(child.EndPosition, child);
                 }
 
-                Decoded = true;
+
+                var childReadOperation = await parser.ParseElementAt(index).ConfigureAwait(false);
+                if (childReadOperation.Value != null)
+                    await InsertElement(childReadOperation.Value);
+                return childReadOperation;
             }
             finally
             {
-                _parserSemaphoreSlim.Release(1);
+                _decodeSemaphore.Release();
             }
-        }
-
-        public async Task<EbmlElement?> DecodeNextChild(EbmlParser parser)
-        {
-            if (parser is null) throw new ArgumentNullException(nameof(parser));
-
-            var lastChild = _children.LastOrDefault().Value;
-            if (lastChild.Position > EndPosition)
-                throw new EndOfMasterException(ExceptionsResourceManager.ResourceManager.GetString("NoChildLeft", CultureInfo.CurrentCulture));
-
-            var index = lastChild.EndPosition;
-            var child = await parser.ParseElementAt(index).ConfigureAwait(false);
-            if (child != null)
-                InsertElement(child);
-            return child;
-        }
-
-        public async Task<EbmlElement?> DecodeChildAt(EbmlParser parser, long index)
-        {
-            if (parser is null) throw new ArgumentNullException(nameof(parser));
-            if (index < DataPosition || index >= EndPosition) throw new ArgumentOutOfRangeException(nameof(index));
-
-            var child = await parser.ParseElementAt(index).ConfigureAwait(false);
-            if (child != null) InsertElement(child);
-            return child;
         }
 
         #endregion
@@ -114,17 +102,14 @@ namespace Otchi.Ebml.Elements
         public async IAsyncEnumerable<EbmlElement?> GetAsyncEnumerable(EbmlParser parser)
         {
             if (parser == null) throw new ArgumentNullException(nameof(parser));
+
             var position = DataPosition;
             while (position < EndPosition)
             {
-                EbmlElement? child;
-                if (_children.ContainsKey(position))
-                    child = _children[position];
-                else
-                    child = await DecodeChildAt(parser, position).ConfigureAwait(false);
+                var childReadOperation = await DecodeChildAt(parser, position).ConfigureAwait(false);
 
-                position = child?.EndPosition ?? parser.DataAccessor.Position;
-                yield return child;
+                position = childReadOperation.Position;
+                yield return childReadOperation.Value;
             }
         }
 
@@ -142,36 +127,50 @@ namespace Otchi.Ebml.Elements
             throw new ParseFailedException("Could not parse child");
         }
 
-        private void InsertElement(EbmlElement childElement)
+        private async Task InsertElement(EbmlElement childElement)
         {
-            if (childElement == null) throw new ArgumentNullException(nameof(childElement));
-            if (childElement.Position < Position || childElement.EndPosition > EndPosition)
-                throw new ArgumentOutOfRangeException(ExceptionsResourceManager.ResourceManager.GetString("ChildOutOfRange", CultureInfo.CurrentCulture));
-
-            if (childElement.Path.ParentPath == Name)
+            await _insertSemaphore.WaitAsync();
+            try
             {
-                childElement.Parent = this;
-                _children.Add(childElement.Position, childElement);
-            }
-            else
-            {
-                var targetChild = _children.FirstOrDefault(pair => pair.Key < childElement.Position).Value;
+                Debug.Assert(childElement != this, "childElement != this");
+                if (childElement == null) throw new ArgumentNullException(nameof(childElement));
+                if (childElement.Position < Position || childElement.EndPosition > EndPosition)
+                    throw new ArgumentOutOfRangeException(
+                        ExceptionsResourceManager.ResourceManager.GetString("ChildOutOfRange",
+                            CultureInfo.CurrentCulture));
 
-                if (targetChild is MasterElement master)
+                if (childElement.Path.ParentPath == Name)
                 {
-                    try
-                    {
-                        master.InsertElement(childElement);
-                    }
-                    catch (ArgumentOutOfRangeException)
-                    {
-                        throw new ParseFailedException("Either the document has not been loaded yet, or the document is constructed incorrectly");
-                    }
+                    childElement.Parent = this;
+                    _children.Add(childElement.Position, childElement);
                 }
                 else
                 {
-                    throw new InvalidEbmlTypeException(ExceptionsResourceManager.ResourceManager.GetString("ParentNotParsed", CultureInfo.CurrentCulture));
+                    var targetChild = _children.FirstOrDefault(pair => pair.Key < childElement.Position).Value;
+
+                    if (targetChild is MasterElement master)
+                    {
+                        try
+                        {
+                            await master.InsertElement(childElement);
+                        }
+                        catch (ArgumentOutOfRangeException)
+                        {
+                            throw new ParseFailedException(
+                                "Either the document has not been loaded yet, or the document is constructed incorrectly");
+                        }
+                    }
+                    else
+                    {
+                        throw new InvalidEbmlTypeException(
+                            ExceptionsResourceManager.ResourceManager.GetString("ParentNotParsed",
+                                CultureInfo.CurrentCulture));
+                    }
                 }
+            }
+            finally
+            {
+                _insertSemaphore.Release();
             }
         }
 
@@ -233,10 +232,9 @@ namespace Otchi.Ebml.Elements
 
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                _parserSemaphoreSlim.Dispose();
-            }
+            if (!disposing) return;
+            _decodeSemaphore.Dispose();
+            _insertSemaphore.Dispose();
         }
 
         #endregion
