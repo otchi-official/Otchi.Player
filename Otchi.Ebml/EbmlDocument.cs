@@ -8,30 +8,15 @@ namespace Otchi.Ebml
 {
     public class EbmlDocument
     {
-        public EbmlHead? Head { get; set; }
+        public EbmlHead Head { get; }
 
-        public MasterElement? Body { get; set; }
-
-        public EbmlDocument() {}
+        public MasterElement Body { get; }
 
         public EbmlDocument(EbmlHead head, MasterElement body)
         {
             Head = head;
             Body = body;
         }
-
-        /*public void InsertElement(EbmlElement element)
-        {
-            if (element == null) throw new ArgumentNullException(nameof(element));
-            if (Body is null || Head is null) throw new InvalidOperationException("Document not initialized");
-            if (element.Position < 0 || element.Position > Body.Position + Body.Size) throw new ArgumentOutOfRangeException(nameof(element));
-
-            if (element.Position < Head.Position)
-                Head.InsertElement(element);
-            else
-                Body.InsertElement(element);
-
-        }*/
 
         public override string ToString()
         {

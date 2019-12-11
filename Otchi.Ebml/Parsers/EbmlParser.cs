@@ -23,8 +23,6 @@ namespace Otchi.Ebml.Parsers
 
         private Dictionary<long, EbmlElementFactory> FactoryList { get; }
 
-        public bool ShouldLog { get; set; } = false;
-
         public IParserDataAccessor DataAccessor { get; }
 
         /// <summary>
@@ -42,29 +40,30 @@ namespace Otchi.Ebml.Parsers
         /// Parses the entire Document or until it reaches a dead end.
         /// </summary>
         /// <returns>The document for the path. Make sure to await it.</returns>
-        public async Task<EbmlDocument?> ParseDocument(bool decode = true)
+        public async Task<EbmlDocument> ParseDocument(bool decode = true)
         {
-            var document = new EbmlDocument();
+            EbmlHead? head = null;
+            MasterElement? body = null;
             await foreach (var element in ParseRoots())
             {
-                if (element is EbmlHead head)
+                if (element is EbmlHead headElement)
                 {
                     if (decode)
-                        await head.Decode(this).ConfigureAwait(false);
-                    document.Head = head;
+                        await headElement.Decode(this).ConfigureAwait(false);
+                    head = headElement;
                 }
                 else
                 {
                     if (decode)
                         await element.Decode(this).ConfigureAwait(false);
-                    document.Body = element;
+                    body = element;
                 }
             }
 
-            if (document.Head == null || document.Body == null)
+            if (head == null || body == null)
                 throw new InvalidEbmlDocException(ExceptionsResourceManager.ResourceManager.GetString("InvalidEbmlFile", CultureInfo.CurrentCulture));
 
-            return document;
+            return new EbmlDocument(head, body);
         }
 
         /// <summary>
@@ -84,13 +83,19 @@ namespace Otchi.Ebml.Parsers
                 throw new FileEmptyException(ExceptionsResourceManager.ResourceManager.GetString(
                     "TriedToParseEmptyFile",
                     CultureInfo.CurrentCulture));
-            DataAccessor.Position = 0;
+
+            long position = 0;
+
+            // TODO: Improve Exceptions.
+
             while (!DataAccessor.Done)
             {
                 EbmlElement? element;
                 try
                 {
-                    element = await ParseNextElement().ConfigureAwait(false);
+                    var readOperation = await ParseElementAt(position).ConfigureAwait(false);
+                    element = readOperation.Value;
+                    position = readOperation.Position;
                 }
                 catch (FileNotLoadedException)
                 {
@@ -112,70 +117,49 @@ namespace Otchi.Ebml.Parsers
                     throw new InvalidEbmlDocException(ExceptionsResourceManager.ResourceManager.GetString(
                         "InvalidRootType",
                         CultureInfo.CurrentCulture));
-                DataAccessor.Position = element.EndPosition;
+
                 yield return (MasterElement)element;
             }
         }
 
-        /// <summary>
-        /// Parses the next element in the file stream.
-        /// </summary>
-        /// <exception cref="FileNotLoadedException">
-        /// Thrown if part of the next element has not been downloaded yet.
-        /// </exception>
-        /// <returns>An asynchronous Task to which will yield the next Element.</returns>
-        public async Task<EbmlElement?> ParseNextElement(EbmlElement? parent = null)
+        public async Task<ReadOperation<EbmlElement?>> ParseElementAt(long position, EbmlElement? parent = null)
         {
-            var position = DataAccessor.Position;
-            // Throws FileNotLoadedException if the file has not been loaded at the position
-            var id = await ParseNextId().ConfigureAwait(false);
-            // Throws FileNotLoadedException if the file has not been loaded at the position
-            var dataSize = await ParseNextVInt().ConfigureAwait(false);
+            var idReadOperation = await ParseIdAt(position);
+            var dataReadOperation = await ParseVintAt(idReadOperation.Position);
 
-            var factory = FactoryList.GetValueOrDefault(id.Size);
-            var element = factory?.Create(dataSize, position, parent);
+            var factory = FactoryList.GetValueOrDefault(idReadOperation.Value.Size);
+            var element = factory?.Create(dataReadOperation.Value, position, parent);
 
-            if (element != null) return element;
-
-            if (ShouldLog)
-                ConsoleExtension.WriteWarning($"No factory found for element {id.Size:X} at position: {position}");
-            DataAccessor.Position = position + dataSize.ByteSize + dataSize.DataSize + id.ByteSize;
-            return null;
-        }
-
-        public async Task<EbmlElement?> ParseElementAt(long offset, EbmlElement? parent = null)
-        {
-            DataAccessor.Position = offset;
-            return await ParseNextElement(parent).ConfigureAwait(false);
+            return new ReadOperation<EbmlElement?>(dataReadOperation.Position + dataReadOperation.Value.DataSize, element);
         }
 
 
         #region VInt Parsing
 
-        public async Task<VInt> ParseNextVInt()
+        public async Task<ReadOperation<VInt>> ParseVintAt(long position)
         {
-
             const int byteSize = 8;
             const int vintDataSizePerByte = byteSize - 1;
             var buffer = new byte[byteSize];
-            await DataAccessor.ReadAsync(buffer, 0, 1).ConfigureAwait(false);
+            await DataAccessor.ReadAsync(buffer, 0, 1, position).ConfigureAwait(false);
             if (buffer[0] == 0)
-                throw new FileNotLoadedException($"VInt at position {DataAccessor.Position - 1:X} was not initialized");
+                throw new FileNotLoadedException($"VInt at position {position:X} was not initialized");
 
             var vintWidth = vintDataSizePerByte - buffer[0].GetMostSignificantBit();
 
             // Validate range. It actually can't be outside this range, therefore its just a temporary assert
             Debug.Assert(vintWidth <= vintDataSizePerByte && vintWidth >= 0, "Invalid Vint Width");
 
-            await DataAccessor.ReadAsync(buffer, 1, vintWidth).ConfigureAwait(false);
+            await DataAccessor.ReadAsync(buffer, 1, vintWidth, position+1).ConfigureAwait(false);
 
             if (buffer.All(x => x == 0))
-                throw new FileNotLoadedException($"VInt at position {DataAccessor.Position - 1 - vintWidth:X} was not initialized");
+                throw new FileNotLoadedException($"VInt at position {position:X} was not initialized");
 
             buffer = Utility.ConvertEndiannes(buffer, vintWidth + 1);
 
             var value = BitConverter.ToInt64(buffer, 0);
-            return VInt.FromValue(value);
+            var vint = VInt.FromValue(value);
+            return new ReadOperation<VInt>(position + vintWidth + 1, vint);
         }
 
         /// <summary>
@@ -187,10 +171,11 @@ namespace Otchi.Ebml.Parsers
         /// </see>
         /// </remarks>
         /// <returns></returns>
-        public async Task<VInt> ParseNextId()
+        public async Task<ReadOperation<VInt>> ParseIdAt(long position)
         {
-            var vint = await ParseNextVInt().ConfigureAwait(false);
-            ValidateId(vint);
+            var vint = await ParseVintAt(position).ConfigureAwait(false);
+            // TODO: Seems kinda stupid to me to call a function which sole purpose is to throw exceptions.
+            ValidateId(vint.Value);
             return vint;
         }
 

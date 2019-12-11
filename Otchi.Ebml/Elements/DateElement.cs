@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Otchi.Ebml.Exceptions;
 using Otchi.Ebml.Parsers;
@@ -10,6 +11,8 @@ namespace Otchi.Ebml.Elements
 {
     public abstract class DateElement : EbmlElement
     {
+        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+
         protected DateElement(VInt dataSize, long position, EbmlElement? parent)
             : base(dataSize, position, parent)
         {
@@ -20,18 +23,35 @@ namespace Otchi.Ebml.Elements
         public sealed override EbmlType Type => EbmlType.Date;
         public override async Task Decode(EbmlParser parser, bool forceDecode = false)
         {
-            if (Decoded && !forceDecode) return;
-            if (parser == null) throw new ArgumentNullException(nameof(parser));
-            if (parser.DataAccessor == null) throw new InvalidOperationException(
-                ExceptionsResourceManager.ResourceManager.GetString("InvalidDecodeState", CultureInfo.CurrentCulture));
+            await _semaphoreSlim.WaitAsync();
 
-            var buffer = new byte[8];
-            parser.DataAccessor.Position = DataPosition;
-            await parser.DataAccessor.ReadAsync(buffer, 0, (int)DataSize.DataSize).ConfigureAwait(false);
-            Utility.ConvertEndiannes(buffer, (int)DataSize.DataSize);
-            Value = EbmlDate.FromNanoSeconds(BitConverter.ToInt64(buffer));
+            try
+            {
+                if (Decoded && !forceDecode) return;
+                if (parser == null) throw new ArgumentNullException(nameof(parser));
+                if (parser.DataAccessor == null)
+                    throw new InvalidOperationException(
+                        ExceptionsResourceManager.ResourceManager.GetString(
+                            "InvalidDecodeState",
+                            CultureInfo.CurrentCulture));
 
-            Decoded = true;
+
+                var buffer = new byte[8];
+                await parser.DataAccessor.ReadAsync(
+                        buffer,
+                        0,
+                        (int) DataSize.DataSize,
+                        DataPosition)
+                    .ConfigureAwait(false);
+                Utility.ConvertEndiannes(buffer, (int) DataSize.DataSize);
+                Value = EbmlDate.FromNanoSeconds(BitConverter.ToInt64(buffer));
+
+                Decoded = true;
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
 
         public override string ToString()

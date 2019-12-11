@@ -13,6 +13,8 @@ namespace Otchi.Ebml.Elements
 {
     public abstract class MasterElement : EbmlElement, IReadOnlyDictionary<long, EbmlElement>, IDisposable
     {
+        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+
         #region Fields
 
         private readonly SortedList<long, EbmlElement> _children = new SortedList<long, EbmlElement>();

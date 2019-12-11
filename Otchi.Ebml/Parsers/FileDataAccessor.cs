@@ -8,11 +8,7 @@ namespace Otchi.Ebml.Parsers
     public class FileDataAccessor: IParserDataAccessor
     {
         private readonly FileStream _fileStream;
-        public long Position {
-            get => _fileStream.Position;
-            set => _fileStream.Seek(value, SeekOrigin.Begin);
-        }
-        public bool Done => Position >= Length;
+        public bool Done => _fileStream.Position >= Length;
         public long Length => _fileStream.Length;
 
         public async Task<int> ReadAsync(byte[] buffer, int bufferOffset, int count, long offset)
@@ -26,11 +22,6 @@ namespace Otchi.Ebml.Parsers
             {
                 throw new DecodeException();
             }
-        }
-
-        public async Task<int> ReadAsync(byte[] buffer, int bufferOffset, int count)
-        {
-            return await ReadAsync(buffer, bufferOffset, count, Position).ConfigureAwait(false);
         }
 
         public FileDataAccessor(string path)
