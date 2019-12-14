@@ -33,7 +33,6 @@ namespace Otchi.Ebml.Elements
         protected MasterElement(VInt dataSize, long position, EbmlElement? parent)
             : base(dataSize, position, parent)
         {
-            _nextDecodePosition = DataPosition;
         }
 
         #endregion
@@ -52,23 +51,15 @@ namespace Otchi.Ebml.Elements
             if (parser.DataAccessor == null) throw new InvalidOperationException(
                 ExceptionsResourceManager.ResourceManager.GetString("InvalidDecodeState", CultureInfo.CurrentCulture));
 
-            if (DataPosition >= EndPosition)
+            await foreach (var element in GetAsyncEnumerable(parser))
             {
-                Console.WriteLine($"Element {this} contains no children");
-                return;
+                if (recursive)
+                    await (element?.Decode(parser, force) ?? Task.CompletedTask).ConfigureAwait(false);
             }
-            var position = DataPosition;
-            while (position < EndPosition)
-            {
-                var elementReadOperation = await parser.ParseElementAt(position, Parent).ConfigureAwait(false);
-                if (recursive) 
-                    await (elementReadOperation.Value?.Decode(parser) ?? Task.CompletedTask).ConfigureAwait(false);
-                position = elementReadOperation.Position;
-            }
-
-            Decoded = true;
         }
 
+        // Important, the decoded attribute will not be updated with this method.
+        // Call Decode or Get the async enumerable.
         public async Task<ReadOperation<EbmlElement?>> DecodeChildAt(EbmlParser parser, long index)
         {
             // All decoding operations will come through here. Hence we lock this function so we can synchronize all calls related to decoding an element.
@@ -79,13 +70,11 @@ namespace Otchi.Ebml.Elements
                 if (index < DataPosition || index >= EndPosition) throw new ArgumentOutOfRangeException(nameof(index));
 
                 // Return the parsed element if it already exists.
-                var child = _children[index];
+                var child = _children.GetValueOrDefault(index);
                 if (child != null)
                 {
                     return new ReadOperation<EbmlElement?>(child.EndPosition, child);
                 }
-
-
                 var childReadOperation = await parser.ParseElementAt(index).ConfigureAwait(false);
                 if (childReadOperation.Value != null)
                     await InsertElement(childReadOperation.Value);
@@ -96,8 +85,6 @@ namespace Otchi.Ebml.Elements
                 _decodeSemaphore.Release();
             }
         }
-
-        #endregion
 
         public async IAsyncEnumerable<EbmlElement?> GetAsyncEnumerable(EbmlParser parser)
         {
@@ -111,6 +98,9 @@ namespace Otchi.Ebml.Elements
                 position = childReadOperation.Position;
                 yield return childReadOperation.Value;
             }
+
+            if (!Decoded)
+                OnDecode();
         }
 
         public async Task<T> TryGetChild<T>(EbmlParser parser) where T : EbmlElement
@@ -127,6 +117,15 @@ namespace Otchi.Ebml.Elements
             throw new ParseFailedException("Could not parse child");
         }
 
+        private void OnDecode()
+        {
+            if (Decoded)
+                Console.WriteLine("Already decoded");
+            Decoded = true;
+        }
+
+        #endregion
+
         private async Task InsertElement(EbmlElement childElement)
         {
             await _insertSemaphore.WaitAsync();
@@ -142,7 +141,10 @@ namespace Otchi.Ebml.Elements
                 if (childElement.Path.ParentPath == Name)
                 {
                     childElement.Parent = this;
-                    _children.Add(childElement.Position, childElement);
+                    if (!_children.ContainsKey(childElement.Position))
+                        _children.Add(childElement.Position, childElement);
+                    else
+                        Console.WriteLine("Key already inside");
                 }
                 else
                 {

@@ -21,7 +21,7 @@ namespace Otchi.Ebml.Elements
 
         public double Value { get; protected set; }
 
-        public sealed override EbmlType Type => EbmlType.DoubleType;
+        public sealed override EbmlType Type => EbmlType.Double;
         public override async Task Decode(EbmlParser parser, bool forceDecode = false)
         {
             await _semaphoreSlim.WaitAsync();
@@ -69,7 +69,7 @@ namespace Otchi.Ebml.Elements
 
         public override string ToString()
         {
-            return $"{Name} - DoubleType: {Value}";
+            return $"{Name} - Double: {Value}";
         }
     }
 }

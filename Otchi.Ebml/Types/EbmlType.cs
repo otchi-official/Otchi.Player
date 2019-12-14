@@ -8,10 +8,10 @@ namespace Otchi.Ebml.Types
         SignedInteger,
         [Description("Unsigned Integer")]
         UnsignedInteger,
-        [Description("DoubleType")]
-        DoubleType,
-        [Description("StringType")]
-        StringType,
+        [Description("Double")]
+        Double,
+        [Description("String")]
+        String,
         [Description("Utf8")]
         Utf8,
         [Description("Date")]
@@ -19,6 +19,8 @@ namespace Otchi.Ebml.Types
         [Description("Master")]
         Master,
         [Description("Binary")]
-        Binary
+        Binary,
+        [Description("Null")]
+        Null
     }
 }

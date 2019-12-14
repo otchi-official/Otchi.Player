@@ -1,15 +1,8 @@
-﻿using System;
-using System.Data;
-using System.IO;
+﻿using Otchi.Ebml.Factories;
+using Otchi.Ebml.Parsers;
+using Otchi.Ebml.Tags;
 using System.Threading;
 using System.Threading.Tasks;
-using Otchi.Core;
-using Otchi.Ebml;
-using Otchi.Ebml.Exceptions;
-using Otchi.Ebml.Factories;
-using Otchi.Ebml.Parsers;
-using Otchi.Matroska.Factories;
-using Otchi.Matroska.Tags;
 
 namespace Otchi.Console
 {
@@ -17,7 +10,31 @@ namespace Otchi.Console
     {
         static void Main(string[] args)
         {
-            Meh().Wait();
+            var parser = new EbmlParser(new FileDataAccessor(@"C:\Users\paravicinij\Downloads\test2.mkv"),
+                EbmlFactories.AllEbmlHeadFactories);
+            var head = parser.ParseElementAt(0).Result.Value as EbmlHead;
+            var task2 = Task.Factory.StartNew(async () =>
+            {
+                Thread.CurrentThread.Name = "Task 2";
+                await foreach (var element in head.GetAsyncEnumerable(parser))
+                {
+                    await (element?.Decode(parser) ?? Task.CompletedTask);
+                    await Task.Delay(50);
+                }
+                System.Console.WriteLine("Task 2 done");
+            });
+
+            var task1 = Task.Factory.StartNew(async () =>
+            {
+                Thread.CurrentThread.Name = "Task 1";
+                await Task.Delay(100);
+                await head.Decode(parser);
+                System.Console.WriteLine("Task1 done");
+            });
+
+            Task.WaitAll(task1, task2);
+            System.Console.WriteLine(head);
+            Thread.Sleep(5000);
 
             /*
             var manager = new TorrentManager(
@@ -27,27 +44,6 @@ namespace Otchi.Console
             Thread.Sleep(1000000);
             manager.ShutDown().Wait();
             */
-        }
-
-        static async Task Meh()
-        {
-            var parser = new EbmlParser(new FileDataAccessor(
-                    @"F:\repos\Otchi.Core\Otchi.Core.Console\bin\Debug\netcoreapp3.0\Downloads\[HorribleSubs] Radiant S2 - 06 [1080p].mkv"),
-                EbmlFactories.Merge(new[] { EbmlFactories.AllEbmlHeadFactories, MatroskaFactories.AllMatroskaFactories }));
-            EbmlDocument? document = null;
-            try
-            {
-                document = parser.ParseDocument(false).Result;
-                document.Head.Decode(parser, true, true).Wait();
-                var seekHead = await document.Body.TryGetChild<SeekHead>(parser);
-                await seekHead.Decode(parser);
-            }
-            catch (DecodeException)
-            {
-                System.Console.WriteLine($"Failed at: {parser.DataAccessor.Position}");
-            }
-
-            System.Console.WriteLine(document);
         }
     }
 }

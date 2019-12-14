@@ -130,7 +130,8 @@ namespace Otchi.Ebml.Parsers
             var factory = FactoryList.GetValueOrDefault(idReadOperation.Value.Size);
             var element = factory?.Create(dataReadOperation.Value, position, parent);
 
-            return new ReadOperation<EbmlElement?>(dataReadOperation.Position + dataReadOperation.Value.DataSize, element);
+            return new ReadOperation<EbmlElement>(
+                dataReadOperation.Position + dataReadOperation.Value.DataSize, element);
         }
 
 
