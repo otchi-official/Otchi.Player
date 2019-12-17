@@ -12,3 +12,7 @@
 /Otchi.Console/bin/Debug/netcoreapp3.0
 /Otchi.Console/obj
 */obj/*
+/Otchi.App/bin/Debug/netcoreapp3.1
+/Otchi.AppFramework/bin/Debug
+/Otchi.Video/bin/Debug/netcoreapp3.1
+/Otchi.VideoFramework/bin/Debug

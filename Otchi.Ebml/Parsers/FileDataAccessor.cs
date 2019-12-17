@@ -26,7 +26,7 @@ namespace Otchi.Ebml.Parsers
 
         public FileDataAccessor(string path)
         {
-            _fileStream = File.OpenRead(path);
+            _fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
         }
     }
 }

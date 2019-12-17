@@ -130,7 +130,7 @@ namespace Otchi.Ebml.Parsers
             var factory = FactoryList.GetValueOrDefault(idReadOperation.Value.Size);
             var element = factory?.Create(dataReadOperation.Value, position, parent);
 
-            return new ReadOperation<EbmlElement>(
+            return new ReadOperation<EbmlElement?>(
                 dataReadOperation.Position + dataReadOperation.Value.DataSize, element);
         }
 
@@ -142,7 +142,15 @@ namespace Otchi.Ebml.Parsers
             const int byteSize = 8;
             const int vintDataSizePerByte = byteSize - 1;
             var buffer = new byte[byteSize];
-            await DataAccessor.ReadAsync(buffer, 0, 1, position).ConfigureAwait(false);
+            try
+            {
+                await DataAccessor.ReadAsync(buffer, 0, 1, position).ConfigureAwait(false);
+            }
+            catch (ArgumentOutOfRangeException exception)
+            {
+                throw new DecodeException(exception.Message);
+            }
+            
             if (buffer[0] == 0)
                 throw new FileNotLoadedException($"VInt at position {position:X} was not initialized");
 

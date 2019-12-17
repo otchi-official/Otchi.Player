@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Otchi.Ebml.Exceptions
 {
-    public class FileNotLoadedException: IOException
+    public class FileNotLoadedException: DecodeException
     {
         public FileNotLoadedException() { }
 
