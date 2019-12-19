@@ -11,13 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Otchi.Core", "Otchi.Core\Ot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Otchi.Console", "Otchi.Console\Otchi.Console.csproj", "{0A2ECD8A-2368-4139-9C70-8EBE350755A0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.App", "Otchi.App\Otchi.App.csproj", "{8C605DE7-4476-4435-A5E8-99995F86A26B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Otchi.App", "Otchi.App\Otchi.App.csproj", "{8C605DE7-4476-4435-A5E8-99995F86A26B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.Video", "Otchi.Video\Otchi.Video.csproj", "{111D4734-1412-4F58-B2CA-1120CFC41192}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.VideoFramework", "Otchi.VideoFramework\Otchi.VideoFramework.csproj", "{227CAEB3-17B7-45CA-A1F4-87376178C6ED}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Otchi.AppFramework", "Otchi.AppFramework\Otchi.AppFramework.csproj", "{84322CBA-D9AD-45CA-A87D-803F0D0F6327}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Otchi.Video", "Otchi.Video\Otchi.Video.csproj", "{111D4734-1412-4F58-B2CA-1120CFC41192}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,14 +45,6 @@ Global
 		{111D4734-1412-4F58-B2CA-1120CFC41192}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{111D4734-1412-4F58-B2CA-1120CFC41192}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{111D4734-1412-4F58-B2CA-1120CFC41192}.Release|Any CPU.Build.0 = Release|Any CPU
-		{227CAEB3-17B7-45CA-A1F4-87376178C6ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{227CAEB3-17B7-45CA-A1F4-87376178C6ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{227CAEB3-17B7-45CA-A1F4-87376178C6ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{227CAEB3-17B7-45CA-A1F4-87376178C6ED}.Release|Any CPU.Build.0 = Release|Any CPU
-		{84322CBA-D9AD-45CA-A87D-803F0D0F6327}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{84322CBA-D9AD-45CA-A87D-803F0D0F6327}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{84322CBA-D9AD-45CA-A87D-803F0D0F6327}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{84322CBA-D9AD-45CA-A87D-803F0D0F6327}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

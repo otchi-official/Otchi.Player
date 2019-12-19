@@ -331,6 +331,7 @@ namespace Otchi.Core
             }
             _picker!.HighPrioritySetStart = 0;
             StreamLoaded(this, new StreamLoadedEventArgs());
+            Console.WriteLine(cues);
         }
 
         private async Task<bool> ParseDocument(int pieceIndex)

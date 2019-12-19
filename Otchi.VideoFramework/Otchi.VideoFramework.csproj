@@ -85,5 +85,11 @@
   <ItemGroup>
     <Content Include="mpv-1.dll" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Otchi.Core\Otchi.Core.csproj">
+      <Project>{8418f274-7daa-40bc-93d8-618f15c641d6}</Project>
+      <Name>Otchi.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

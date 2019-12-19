@@ -6,7 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenTK.GLControl" Version="3.1.0" />
+    <PackageReference Include="SharpGL" Version="2.4.1.2" />
+    <PackageReference Include="SharpGL.SceneGraph" Version="2.4.1.2" />
+    <PackageReference Include="SharpGL.WPF" Version="2.4.1.2" />
   </ItemGroup>
 
 </Project>

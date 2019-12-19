@@ -94,11 +94,5 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Otchi.VideoFramework\Otchi.VideoFramework.csproj">
-      <Project>{227caeb3-17b7-45ca-a1f4-87376178c6ed}</Project>
-      <Name>Otchi.VideoFramework</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
