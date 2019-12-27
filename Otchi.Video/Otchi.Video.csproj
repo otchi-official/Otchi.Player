@@ -3,12 +3,16 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SharpGL" Version="2.4.1.2" />
-    <PackageReference Include="SharpGL.SceneGraph" Version="2.4.1.2" />
-    <PackageReference Include="SharpGL.WPF" Version="2.4.1.2" />
+    <PackageReference Include="LibVLCSharp.WPF" Version="3.4.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.8.1" />
   </ItemGroup>
 
 </Project>

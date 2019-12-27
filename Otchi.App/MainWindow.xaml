@@ -7,7 +7,8 @@
         xmlns:video="clr-namespace:Otchi.Video;assembly=Otchi.Video"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <video:VideoPlayer></video:VideoPlayer>
-    </Grid>
+    <DockPanel>
+        <video:VideoPlayer Name="VideoPlayer" />
+        
+    </DockPanel>
 </Window>

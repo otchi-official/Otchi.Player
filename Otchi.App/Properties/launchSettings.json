@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Otchi.App": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

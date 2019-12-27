@@ -35,6 +35,9 @@ namespace Otchi.Core
         private readonly SortedSet<long> _hashedPieces = new SortedSet<long>();
         private readonly SortedSet<long> _requestedPieces = new SortedSet<long>();
 
+        public string Name => _torrentManager.Torrent.Name;
+        public string FullPath => Path.Combine( _saveDirectory, Name);
+
         #region EBML
 
         private EbmlParser? _parser;

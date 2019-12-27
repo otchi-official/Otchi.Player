@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Otchi.Video": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "PATH": "C:\\msys64\\mingw64\\bin:$PATH$"
+      }
+    }
+  }
+}
