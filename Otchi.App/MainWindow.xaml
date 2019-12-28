@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:Otchi.App"
         xmlns:video="clr-namespace:Otchi.Video;assembly=Otchi.Video"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800"
+        Background="Black">
     <DockPanel>
         <video:VideoPlayer Name="VideoPlayer" />
         

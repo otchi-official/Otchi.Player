@@ -38,6 +38,8 @@ namespace Otchi.Core
         public string Name => _torrentManager.Torrent.Name;
         public string FullPath => Path.Combine( _saveDirectory, Name);
 
+        public DownloadProgress Progress { get; }
+
         #region EBML
 
         private EbmlParser? _parser;
@@ -114,6 +116,8 @@ namespace Otchi.Core
             _torrentManager.TorrentStateChanged += OnStateChanged;
             _torrentManager.TorrentStateChanged += (sender, args) => Console.WriteLine(args.NewState);
             TorrentError += OnError;
+
+            Progress = new DownloadProgress();
         }
 
         public async Task Start()
@@ -163,8 +167,10 @@ namespace Otchi.Core
         private async void OnMetadataLoaded(object sender, TorrentStateChangedEventArgs e)
         {
             Debug.Assert(_torrentManager.HasMetadata, "Metadata was not found");
+            Debug.Assert(_torrentManager.Torrent != null, "_torrentManager.Torrent != null");
             Console.WriteLine("Metadata found, stopping to load fast resume");
             await _torrentManager.StopAsync();
+            await Progress.SetTorrent(_torrentManager.Torrent);
             await LoadPicker();
             //await LoadFastResumeData();
 
@@ -325,6 +331,8 @@ namespace Otchi.Core
                 if (!await ParseDocument(pieceIndex))
                     return;
             }
+
+            await Progress.SetDocument(_document!);
 
             var cues = await ParseCues(pieceIndex);
             if (cues is null)
