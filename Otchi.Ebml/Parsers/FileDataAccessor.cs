@@ -5,7 +5,7 @@ using Otchi.Ebml.Exceptions;
 
 namespace Otchi.Ebml.Parsers
 {
-    public class FileDataAccessor: IParserDataAccessor
+    public sealed class FileDataAccessor: IParserDataAccessor, IDisposable
     {
         private readonly FileStream _fileStream;
         public bool Done => _fileStream.Position >= Length;
@@ -27,6 +27,20 @@ namespace Otchi.Ebml.Parsers
         public FileDataAccessor(string path)
         {
             _fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _fileStream.Dispose();
+            }
         }
     }
 }

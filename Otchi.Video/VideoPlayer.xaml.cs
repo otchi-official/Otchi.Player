@@ -49,13 +49,12 @@ namespace Otchi.Video
 
         public VideoPlayer()
         {
-            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             InitializeComponent();
             Core.Initialize();
             _libVlc = new LibVLC();
             _mediaPlayer = new MediaPlayer(_libVlc);
             VideoView.MediaPlayer = _mediaPlayer;
-            //VideoView.Loaded += (sender, args) => Play(@"C:\Users\paravicinij\source\repos\Otchi.Player\Otchi.App\bin\Debug\netcoreapp3.1\Downloads\[HorribleSubs] Ore wo Suki nano wa Omae dake ka yo - 01 [1080p].mkv");
+            //VideoView.Loaded += (sender, args) => Play(@"F:\repos\Otchi.Player\Otchi.App\bin\Debug\netcoreapp3.1\Downloads\[HorribleSubs] Ore wo Suki nano wa Omae dake ka yo - 02 [1080p].mkv");
             InitialiseDispatchTimer();
             RegisterName(ControlPanel.Name, ControlPanel);
         }
@@ -84,7 +83,6 @@ namespace Otchi.Video
         {
             if (_isControlBarShowing) return;
             _isControlBarShowing = true;
-            Console.WriteLine("Showing");
             _storyboard.Stop();
             _storyboard.Remove();
             var anim = new DoubleAnimation

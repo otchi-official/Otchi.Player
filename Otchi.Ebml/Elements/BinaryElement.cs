@@ -11,7 +11,7 @@ using Otchi.Ebml.Types;
 
 namespace Otchi.Ebml.Elements
 {
-    public abstract class BinaryElement : EbmlElement
+    public abstract class BinaryElement : EbmlElement, IDisposable
     {
 
         private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
@@ -50,6 +50,11 @@ namespace Otchi.Ebml.Elements
             {
                 _semaphoreSlim.Release();
             }
+        }
+
+        public void Dispose()
+        {
+            _semaphoreSlim.Dispose();
         }
     }
 }
