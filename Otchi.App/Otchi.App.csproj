@@ -25,4 +25,8 @@
     <ProjectReference Include="..\Otchi.Video\Otchi.Video.csproj" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="XCOPY /E /I /Y $(SolutionDir)Otchi.Video\bin\Debug\netcoreapp3.1\libvlc $(TargetDir)libvlc" />
+  </Target>
+
 </Project>

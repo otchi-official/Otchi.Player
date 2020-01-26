@@ -7,7 +7,7 @@ namespace Otchi.Ebml.Parsers
 {
     public sealed class FileDataAccessor: IParserDataAccessor, IDisposable
     {
-        private readonly FileStream _fileStream;
+        private readonly BufferedStream _fileStream;
         public bool Done => _fileStream.Position >= Length;
         public long Length => _fileStream.Length;
 
@@ -26,7 +26,7 @@ namespace Otchi.Ebml.Parsers
 
         public FileDataAccessor(string path)
         {
-            _fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+            _fileStream = new BufferedStream(new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite));
         }
 
         public void Dispose()

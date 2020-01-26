@@ -96,8 +96,10 @@ namespace Otchi.Core
 
         #endregion
 
-        public StreamManager(string magnetUrl)
+        public StreamManager(Uri magnetUrl)
         {
+            if (magnetUrl is null) throw new ArgumentNullException(nameof(magnetUrl));
+
             var settings = new EngineSettings
             {
                 SavePath = _saveDirectory,
@@ -110,7 +112,7 @@ namespace Otchi.Core
             if (!Directory.Exists(_saveDirectory))
                 Directory.CreateDirectory(_saveDirectory);
 
-            var magnet = MagnetLink.Parse(magnetUrl);
+            var magnet = MagnetLink.Parse(magnetUrl.AbsoluteUri);
             _torrentManager = new TorrentManager(magnet, _saveDirectory, torrentDefaults, _saveDirectory);
             _torrentManager.PieceHashed += OnPieceHashed;
             _torrentManager.TorrentStateChanged += OnStateChanged;
@@ -118,6 +120,8 @@ namespace Otchi.Core
             TorrentError += OnError;
 
             Progress = new DownloadProgress();
+            _torrentManager.PieceHashed += Progress.OnPieceHashed;
+            Progress.DownloadProgressed += (sender, args) => Console.WriteLine(args.ModifiedRange);
         }
 
         public async Task Start()
@@ -130,14 +134,14 @@ namespace Otchi.Core
 
             if (_torrentManager.HasMetadata)
             {
-                await LoadFastResumeData();
+                await LoadFastResumeData().ConfigureAwait(false);
             }
             else
             {
                 TorrentMetadataLoaded += OnMetadataLoaded;
             }
 
-            await _torrentManager.StartAsync();
+            await _torrentManager.StartAsync().ConfigureAwait(false);
         }
 
         #region OnEvent
@@ -170,7 +174,7 @@ namespace Otchi.Core
             Debug.Assert(_torrentManager.Torrent != null, "_torrentManager.Torrent != null");
             Console.WriteLine("Metadata found, stopping to load fast resume");
             await _torrentManager.StopAsync();
-            await Progress.SetTorrent(_torrentManager.Torrent);
+            Progress.SetTorrent(_torrentManager.Torrent);
             await LoadPicker();
             //await LoadFastResumeData();
 
@@ -332,7 +336,7 @@ namespace Otchi.Core
                     return;
             }
 
-            await Progress.SetDocument(_document!);
+            Progress.SetDocument(_document!);
 
             var cues = await ParseCues(pieceIndex);
             if (cues is null)
