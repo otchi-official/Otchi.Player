@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -10,55 +11,101 @@ using MonoTorrent.BEncoding;
 using MonoTorrent.Client;
 using MonoTorrent.Client.PiecePicking;
 using MonoTorrent.Dht;
-using Otchi.Ebml;
-using Otchi.Ebml.Exceptions;
-using Otchi.Ebml.Factories;
-using Otchi.Ebml.Parsers;
-using Otchi.Matroska.Factories;
-using Otchi.Matroska.Tags;
-
+using NLog;
+using Otchi.Core.EventArgs;
 
 namespace Otchi.Core
 {
-
-    public class StreamLoadedEventArgs : EventArgs
+    public class StreamManager : IDisposable
     {
-    }
+        public StreamManager(Uri magnetUrl)
+        {
+            if (magnetUrl is null) throw new ArgumentNullException(nameof(magnetUrl));
 
-    public class StreamManager
-    {
+            var settings = new EngineSettings
+            {
+                SavePath = _saveDirectory,
+                ListenPort = Port
+            };
+
+            var torrentDefaults = new TorrentSettings();
+            _engine = new ClientEngine(settings);
+
+            if (!Directory.Exists(_saveDirectory))
+                Directory.CreateDirectory(_saveDirectory);
+
+            var magnet = MagnetLink.Parse(magnetUrl.AbsoluteUri);
+            _torrentManager = new TorrentManager(magnet, _saveDirectory, torrentDefaults, _saveDirectory);
+            _torrentManager.PieceHashed += OnPieceHashed;
+            _torrentManager.TorrentStateChanged += OnStateChanged;
+
+            TorrentError += OnError;
+        }
+
+        public async Task Start()
+        {
+            await _startSemaphore.WaitAsync().ConfigureAwait(false);
+
+            try
+            {
+                if (_torrentManager.State != TorrentState.Stopped)
+                {
+                    Logger.Warn($"Start called on torrent while its state is: {_torrentManager.State}");
+                    return;
+                }
+
+                await LoadDhtNodes().ConfigureAwait(false);
+
+                if (!_engine.Torrents.Contains(_torrentManager))
+                    await _engine.Register(_torrentManager).ConfigureAwait(false);
+
+                if (_torrentManager.HasMetadata)
+                    await LoadFastResumeData().ConfigureAwait(false);
+                else
+                    TorrentMetadataLoaded += OnMetadataLoaded;
+
+                await _torrentManager.StartAsync().ConfigureAwait(false);
+                Logger.Info("Started torrent download.");
+            }
+            finally
+            {
+                _startSemaphore.Release(1);
+            }
+        }
+
+        #region Fields
+
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         private const int Port = 6600;
         private readonly ClientEngine _engine;
         private readonly TorrentManager _torrentManager;
         private SlidingWindowPicker? _picker;
+        private bool _loaded;
+        private DownloadProgress? _progress;
+        private readonly SemaphoreSlim _startSemaphore = new SemaphoreSlim(1, 1);
 
-        private readonly SortedSet<long> _hashedPieces = new SortedSet<long>();
-        private readonly SortedSet<long> _requestedPieces = new SortedSet<long>();
+        private readonly List<int> _hashedPieces = new List<int>();
+
+        #endregion
+
+        #region Properties
 
         public string Name => _torrentManager.Torrent.Name;
-        public string FullPath => Path.Combine( _saveDirectory, Name);
+        public string FullPath => Path.Combine(_saveDirectory, Name);
 
-        public DownloadProgress Progress { get; }
-
-        #region EBML
-
-        private EbmlParser? _parser;
-        private EbmlDocument? _document;
-        private readonly List<Dictionary<long, EbmlElementFactory>> _dictList = new List<Dictionary<long, EbmlElementFactory>>
+        public DownloadProgress? Progress
         {
-            EbmlFactories.AllEbmlHeadFactories,
-            MatroskaFactories.SegmentInformationFactories,
-            MatroskaFactories.AttachmentFactories,
-            MatroskaFactories.ChapterFactories,
-            MatroskaFactories.CueingDataFactories,
-            MatroskaFactories.MatroskaSegmentFactories,
-            MatroskaFactories.MetaSeekInformationFactories,
-            MatroskaFactories.TaggingFactories,
-            MatroskaFactories.TrackFactories
-        };
+            get => _progress;
+            private set
+            {
+                if (_progress != null) _progress.DownloadProgressed -= OnDownloadProgressed;
+                _progress = value;
+                if (_progress == null) return;
 
-        private Dictionary<long, EbmlElementFactory> ElementFactories => EbmlFactories.Merge(_dictList);
-
+                _progress.DownloadProgressed += OnDownloadProgressed;
+            }
+        }
 
         #endregion
 
@@ -87,112 +134,29 @@ namespace Otchi.Core
 
         #endregion
 
-        #region Semaphores
-
-        private readonly SemaphoreSlim _documentSemaphore = new SemaphoreSlim(1, 1);
-        private readonly SemaphoreSlim _requestSemaphore = new SemaphoreSlim(1, 1);
-        private readonly SemaphoreSlim _cuesSemaphore = new SemaphoreSlim(1, 1);
-        private readonly SemaphoreSlim _seekHeadSemaphore = new SemaphoreSlim(1, 1);
-
-        #endregion
-
-        public StreamManager(Uri magnetUrl)
-        {
-            if (magnetUrl is null) throw new ArgumentNullException(nameof(magnetUrl));
-
-            var settings = new EngineSettings
-            {
-                SavePath = _saveDirectory,
-                ListenPort = Port
-            };
-
-            var torrentDefaults = new TorrentSettings();
-            _engine = new ClientEngine(settings);
-
-            if (!Directory.Exists(_saveDirectory))
-                Directory.CreateDirectory(_saveDirectory);
-
-            var magnet = MagnetLink.Parse(magnetUrl.AbsoluteUri);
-            _torrentManager = new TorrentManager(magnet, _saveDirectory, torrentDefaults, _saveDirectory);
-            _torrentManager.PieceHashed += OnPieceHashed;
-            _torrentManager.TorrentStateChanged += OnStateChanged;
-            _torrentManager.TorrentStateChanged += (sender, args) => Console.WriteLine(args.NewState);
-            TorrentError += OnError;
-
-            Progress = new DownloadProgress();
-            _torrentManager.PieceHashed += Progress.OnPieceHashed;
-            Progress.DownloadProgressed += (sender, args) => Console.WriteLine(args.ModifiedRange);
-        }
-
-        public async Task Start()
-        {
-            if (_torrentManager.State != TorrentState.Stopped)
-                throw new InvalidOperationException("Object is not stopped");
-
-            await LoadDhtNodes();
-            await _engine.Register(_torrentManager);
-
-            if (_torrentManager.HasMetadata)
-            {
-                await LoadFastResumeData().ConfigureAwait(false);
-            }
-            else
-            {
-                TorrentMetadataLoaded += OnMetadataLoaded;
-            }
-
-            await _torrentManager.StartAsync().ConfigureAwait(false);
-        }
-
         #region OnEvent
-
-        private async void OnPieceHashed(object sender, PieceHashedEventArgs e)
-        {
-            if (!e.HashPassed) return;
-            // The piece request needs to access the same _hashed pieces resource
-            Console.WriteLine($"Hashed piece {e.PieceIndex}");
-            await _requestSemaphore.WaitAsync();
-            try
-            {
-                _hashedPieces.Add(e.PieceIndex);
-            }
-            finally
-            {
-                _requestSemaphore.Release();
-            }
-
-
-            if (!_requestedPieces.Contains(e.PieceIndex)) return;
-
-            await IndexStream(e.PieceIndex);
-            _requestedPieces.Remove(e.PieceIndex);
-        }
 
         private async void OnMetadataLoaded(object sender, TorrentStateChangedEventArgs e)
         {
             Debug.Assert(_torrentManager.HasMetadata, "Metadata was not found");
             Debug.Assert(_torrentManager.Torrent != null, "_torrentManager.Torrent != null");
-            Console.WriteLine("Metadata found, stopping to load fast resume");
-            await _torrentManager.StopAsync();
-            Progress.SetTorrent(_torrentManager.Torrent);
-            await LoadPicker();
-            //await LoadFastResumeData();
+            Logger.Trace("Metadata found, stopping to load fast resume");
 
-            var dataAccessor = new FileDataAccessor(Path.Combine(_torrentManager.SavePath, _torrentManager.Torrent.Name));
-            _parser = new EbmlParser(dataAccessor, ElementFactories);
+            await _torrentManager.StopAsync().ConfigureAwait(false);
+
+            Progress = new DownloadProgress(_torrentManager.Torrent, new ReadOnlyCollection<int>(_hashedPieces));
+            await LoadPicker().ConfigureAwait(false);
 
             TorrentMetadataLoaded -= OnMetadataLoaded;
-
-            _requestedPieces.Add(0);
-            await _torrentManager.StartAsync();
+            await _torrentManager.StartAsync().ConfigureAwait(false);
         }
 
         private void OnStateChanged(object sender, TorrentStateChangedEventArgs e)
         {
+            Logger.Info($"Torrent State changed from: {e.OldState} to: {e.NewState}");
+
             if (e.OldState == TorrentState.Metadata && e.NewState != TorrentState.Error)
-            {
                 TorrentMetadataLoaded.Invoke(sender, e);
-            }
             switch (e.NewState)
             {
                 case TorrentState.Error:
@@ -226,15 +190,37 @@ namespace Otchi.Core
                     TorrentMetadata.Invoke(sender, e);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(e));
             }
         }
 
         private void OnError(object sender, TorrentStateChangedEventArgs e)
         {
-            Console.WriteLine(_torrentManager.Error.Exception);
-            Console.WriteLine(_torrentManager.Error.Exception.Source);
-            Console.WriteLine(_torrentManager.Error.Reason);
+            Logger.Error(_torrentManager.Error.Exception);
+            Logger.Error(_torrentManager.Error.Exception.Source);
+            Logger.Error(_torrentManager.Error.Reason);
+        }
+
+        private async void OnPieceHashed(object sender, PieceHashedEventArgs e)
+        {
+            if (!e.HashPassed) return;
+
+            await _engine.DiskManager.FlushAsync(_torrentManager.Torrent, e.PieceIndex).ConfigureAwait(false);
+            _hashedPieces.Add(e.PieceIndex);
+            Progress?.OnPieceRegistered(new PieceRegisteredEventArgs(e.PieceIndex));
+        }
+
+        private void OnDownloadProgressed(object sender, DownloadProgressedEventArgs e)
+        {
+            Debug.Assert(Progress != null, "Progress != null");
+            lock (StreamLoaded)
+            {
+                if (_loaded || e.ModifiedRange.StartIndex != 0 || e.ModifiedRange.Count < 10) return;
+
+                Logger.Info("Stream Loaded");
+                StreamLoaded(this, new StreamLoadedEventArgs());
+                _loaded = true;
+            }
         }
 
         #endregion
@@ -246,46 +232,46 @@ namespace Otchi.Core
             if (!_torrentManager.HasMetadata || _torrentManager.State != TorrentState.Stopped)
                 throw new InvalidDataException("Torrent Manager is in an invalid state");
 
-            _picker = new SlidingWindowPicker(new StandardPicker()) { HighPrioritySetSize = 5, HighPrioritySetStart = 0 };
-            await _torrentManager.ChangePickerAsync(_picker);
+            _picker = new SlidingWindowPicker(new StandardPicker()) {HighPrioritySetSize = 5, HighPrioritySetStart = 0};
+            await _torrentManager.ChangePickerAsync(_picker).ConfigureAwait(false);
         }
 
         private async Task LoadFastResumeData()
         {
             try
             {
-                var fastResumeData = await File.ReadAllBytesAsync(FastResumeFile);
+                var fastResumeData = await File.ReadAllBytesAsync(FastResumeFile).ConfigureAwait(false);
                 var fastResume = BEncodedValue.Decode<BEncodedDictionary>(fastResumeData);
-                Console.WriteLine("Fast resume data found initializing torrent with existing data.");
+                Logger.Trace("Fast resume data found initializing torrent with existing data.");
                 if (fastResume.ContainsKey(_torrentManager.InfoHash.ToHex()))
                 {
-                    var fastResumeForTorrent = new FastResume((BEncodedDictionary)fastResume[_torrentManager.InfoHash.ToHex()]);
+                    var fastResumeForTorrent =
+                        new FastResume((BEncodedDictionary) fastResume[_torrentManager.InfoHash.ToHex()]);
                     _torrentManager.LoadFastResume(fastResumeForTorrent);
                 }
-
             }
             catch (IOException)
             {
-                Console.WriteLine("No fast resume data found starting fresh torrent.");
+                Logger.Trace("No fast resume data found starting fresh torrent.");
             }
         }
 
         private async Task LoadDhtNodes()
         {
-            var dhtEngine = new DhtEngine(new IPEndPoint(IPAddress.Any, Port));
-            await _engine.RegisterDhtAsync(dhtEngine);
+            using var dhtEngine = new DhtEngine(new IPEndPoint(IPAddress.Any, Port));
+            await _engine.RegisterDhtAsync(dhtEngine).ConfigureAwait(false);
 
             var nodes = Array.Empty<byte>();
             try
             {
-                nodes = await File.ReadAllBytesAsync(DhtNodeFile);
+                nodes = await File.ReadAllBytesAsync(DhtNodeFile).ConfigureAwait(false);
             }
             catch (IOException)
             {
-                Console.WriteLine("No existing dht nodes found, creating fresh engine.");
+                Logger.Trace("No existing dht nodes found, creating fresh engine.");
             }
 
-            await _engine.DhtEngine.StartAsync(nodes);
+            await _engine.DhtEngine.StartAsync(nodes).ConfigureAwait(false);
         }
 
         #endregion
@@ -294,13 +280,13 @@ namespace Otchi.Core
 
         public async Task ShutDown()
         {
-            await _torrentManager.StopAsync();
-            Console.WriteLine("Torrent Manager shut down");
+            await _torrentManager.StopAsync().ConfigureAwait(false);
+            Logger.Debug("Torrent Manager shut down");
 
             if (_torrentManager.HashChecked)
-                await SaveFastResume();
+                await SaveFastResume().ConfigureAwait(false);
 
-            await SaveDhtNodes();
+            await SaveDhtNodes().ConfigureAwait(false);
             _engine.Dispose();
         }
 
@@ -310,183 +296,35 @@ namespace Otchi.Core
             {
                 {_torrentManager.Torrent.InfoHash.ToHex(), _torrentManager.SaveFastResume().Encode()}
             };
+
             // TODO: read from file
-            await File.WriteAllBytesAsync(FastResumeFile, fastResume.Encode());
+            await File.WriteAllBytesAsync(FastResumeFile, fastResume.Encode()).ConfigureAwait(false);
         }
 
         private async Task SaveDhtNodes()
         {
-            var nodes = await _engine.DhtEngine.SaveNodesAsync();
-            await File.WriteAllBytesAsync(DhtNodeFile, nodes);
+            var nodes = await _engine.DhtEngine.SaveNodesAsync().ConfigureAwait(false);
+            await File.WriteAllBytesAsync(DhtNodeFile, nodes).ConfigureAwait(false);
         }
 
         #endregion
 
-        #region Document Indexing
+        #region Disposable
 
-        private async Task IndexStream(int pieceIndex)
+        public void Dispose()
         {
-            Console.WriteLine($"Indexing {pieceIndex}");
-            await _torrentManager.Engine.DiskManager.FlushAsync(_torrentManager.Torrent, pieceIndex)
-                .ConfigureAwait(false);
-
-            if (_document is null)
-            {
-                if (!await ParseDocument(pieceIndex))
-                    return;
-            }
-
-            Progress.SetDocument(_document!);
-
-            var cues = await ParseCues(pieceIndex);
-            if (cues is null)
-            {
-                Console.WriteLine("Cues were null, but they probably shouldn't");
-                return;
-            }
-            _picker!.HighPrioritySetStart = 0;
-            StreamLoaded(this, new StreamLoadedEventArgs());
-            Console.WriteLine(cues);
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        private async Task<bool> ParseDocument(int pieceIndex)
+        protected virtual void Dispose(bool dispose)
         {
-            Debug.Assert(_parser != null, "Parser can not be null when trying to parse the document");
-            await _documentSemaphore.WaitAsync();
+            if (!dispose) return;
 
-            try
-            {
-                if (_document != null) return true;
-
-                var document = _parser!.ParseDocument(false).Result;
-                await document.Head.Decode(_parser);
-                if (document.Head.Decoded)
-                {
-                    _document = document;
-                }
-
-                return true;
-            }
-            catch (DecodeException exception)
-            {
-                Console.WriteLine($"Failed to parse document: {exception}");
-                await RequestPieceToIndex(pieceIndex + 1);
-            }
-            finally
-            {
-                _documentSemaphore.Release();
-            }
-
-            return false;
-        }
-
-        private async Task<Cues?> ParseCues(int pieceIndex)
-        {
-            Debug.Assert(_parser != null, "Parser can not be null at this point");
-            if (_document?.Body == null)
-                throw new InvalidOperationException("Document can not be null when trying to decode the cues");
-
-            await _cuesSemaphore.WaitAsync();
-
-
-            try
-            {
-                var cues = await _document.Body.TryGetChild<Cues>(_parser);
-                await (cues?.Decode(_parser) ?? Task.CompletedTask);
-                if (cues != null) return cues;
-            }
-            catch (DecodeException e)
-            {
-                Console.WriteLine($"Could not decode cues {e}");
-                var cuesPos = await ParseCuesPosition(pieceIndex) + _document.Body.DataPosition;
-                if (cuesPos is null) return null;
-                try
-                {
-                    var cues = await _document.Body.DecodeChildAt(_parser, (long)cuesPos);
-                    await (cues.Value?.Decode(_parser) ?? Task.FromResult<Cues?>(null));
-                    if (cues.Value is null) throw new DecodeException();
-                    return cues.Value as Cues;
-                }
-                catch (DecodeException exception)
-                {
-                    var pieceToGet = (int)(cuesPos / _torrentManager.Torrent.PieceLength);
-                    if (pieceToGet == pieceIndex)
-                        pieceToGet += 1;
-                    Console.WriteLine($"Could not decode cues at {cuesPos}. Requesting piece {pieceToGet}. {exception}");
-                    await RequestPieceToIndex(pieceToGet);
-                }
-            }
-            finally
-            {
-                _cuesSemaphore.Release();
-            }
-
-            return null;
-        }
-
-        private async Task<long?> ParseCuesPosition(int pieceIndex)
-        {
-            Debug.Assert(_parser != null, "Parser can not be null at this point");
-            if (_document?.Body == null)
-                throw new InvalidOperationException("Document can not be null when trying to decode the cues");
-
-            await _seekHeadSemaphore.WaitAsync();
-
-            try
-            {
-                var seekHead = await _document.Body.TryGetChild<SeekHead>(_parser);
-                await seekHead.Decode(_parser);
-                Debug.Assert(seekHead.Decoded, "seek head not decoded");
-
-                foreach (var child in seekHead)
-                {
-                    var seek = (Seek)child.Value;
-                    if (seek.SeekId == (ulong)MatroskaIds.CuesId.Size)
-                    {
-                        return (long?)seek.SeekPosition;
-                    }
-                }
-            }
-            catch (DecodeException)
-            {
-                await RequestPieceToIndex(pieceIndex + 1);
-            }
-            finally
-            {
-                _seekHeadSemaphore.Release();
-            }
-
-            return null;
-        }
-
-        private async Task RequestPieceToIndex(int pieceIndex)
-        {
-            Console.WriteLine($"Requesting {pieceIndex}");
-            var shouldIndex = false;
-            await _requestSemaphore.WaitAsync();
-
-            try
-            {
-                if (_hashedPieces.Contains(pieceIndex))
-                    shouldIndex = true;
-                else
-                {
-                    if (!_requestedPieces.Contains(pieceIndex))
-                        _requestedPieces.Add(pieceIndex);
-                    _picker!.HighPrioritySetStart = pieceIndex;
-                }
-            }
-            finally
-            {
-                _requestSemaphore.Release();
-            }
-
-            if (shouldIndex)
-                await IndexStream(pieceIndex);
+            _engine.Dispose();
+            _torrentManager.Dispose();
         }
 
         #endregion
-
-
     }
 }

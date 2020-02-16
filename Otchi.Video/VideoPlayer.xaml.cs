@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using LibVLCSharp.Shared;
+using NLog;
 using Timer = System.Timers.Timer;
 
 namespace Otchi.Video
@@ -17,9 +20,43 @@ namespace Otchi.Video
     /// </summary>
     public partial class VideoPlayer : UserControl
     {
-        private readonly LibVLC _libVlc;
-        private readonly MediaPlayer _mediaPlayer;
-        private bool _isControlBarShowing = true;
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        private LibVLC? _libVlc;
+        private MediaPlayer? _mediaPlayer;
+
+        public VideoPlayer()
+        {
+            InitializeComponent();
+            InitializeVlc();
+
+            //RegisterName(ControlPanel.Name, ControlPanel);
+        }
+
+        public void Play(string name)
+        {
+            Debug.Assert(Dispatcher != null, nameof(Dispatcher) + " != null");
+            Debug.Assert(_libVlc != null, nameof(_libVlc) + " != null");
+            Debug.Assert(_mediaPlayer != null, nameof(_mediaPlayer) + " != null");
+
+            Dispatcher.Invoke(() =>
+            {
+                var media = new Media(_libVlc, name);
+                _mediaPlayer.Play(media);
+            });
+        }
+
+        private void InitializeVlc()
+        {
+            Logger.Trace("Initializing VLC");
+            Core.Initialize();
+            _libVlc = new LibVLC();
+            _mediaPlayer = new MediaPlayer(_libVlc);
+            VideoView.MediaPlayer = _mediaPlayer;
+            Logger.Trace("VLC Initialized");
+        }
+
+        /*private bool _isControlBarShowing = true;
         private DispatcherTimer _controlBarHideTimer;
         private static TimeSpan HideTime => new TimeSpan(0, 0, 0,0, 2000);
         private readonly Storyboard _storyboard = new Storyboard();
@@ -174,6 +211,6 @@ namespace Otchi.Video
             {
                 ShowControlBar();
             }
-        }
+        }*/
     }
 }

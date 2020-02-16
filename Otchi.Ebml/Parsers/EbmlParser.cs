@@ -18,7 +18,7 @@ namespace Otchi.Ebml.Parsers
     /// A generalized parser for any Ebml Document.
     /// All of its content will be parsed asynchronously.
     /// </summary>
-    public class EbmlParser
+    public class EbmlParser: IDisposable
     {
 
         private Dictionary<long, EbmlElementFactory> FactoryList { get; }
@@ -124,8 +124,8 @@ namespace Otchi.Ebml.Parsers
 
         public async Task<ReadOperation<EbmlElement?>> ParseElementAt(long position, EbmlElement? parent = null)
         {
-            var idReadOperation = await ParseIdAt(position);
-            var dataReadOperation = await ParseVintAt(idReadOperation.Position);
+            var idReadOperation = await ParseIdAt(position).ConfigureAwait(false);
+            var dataReadOperation = await ParseVintAt(idReadOperation.Position).ConfigureAwait(false);
 
             var factory = FactoryList.GetValueOrDefault(idReadOperation.Value.Size);
             var element = factory?.Create(dataReadOperation.Value, position, parent);
@@ -215,7 +215,21 @@ namespace Otchi.Ebml.Parsers
 
         #endregion
 
+        #region Disposable
 
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool dispose)
+        {
+            if (!dispose) return;
+            DataAccessor.Dispose();
+        }
+
+        #endregion
 
     }
 }

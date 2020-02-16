@@ -5,49 +5,44 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Otchi.Video"
              xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
+             xmlns:video="clr-namespace:Otchi.Video"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
-             Background="Black"
-             MouseMove="VideoView_OnMouseMove"
              Name="VideoPlayerView">
-    <vlc:VideoView Name="VideoView">
-        <!-- TODO: Background cant be transparent otherwise mouse move won't get triggered -->
-        <Canvas Name="VideoCanvas"
+    <vlc:VideoView Name="VideoView"></vlc:VideoView>
+    <!--<vlc:VideoView Name="VideoView">
+    <Canvas Name="VideoCanvas"
                 Width="{Binding ActualWidth, ElementName=VideoView}"
                 Height="{Binding ActualHeight, ElementName=VideoView}"
                 MouseMove="VideoView_OnMouseMove"
                 Background="#01000000">
-            <Grid Canvas.Bottom="0"
+        <Grid Canvas.Bottom="0"
                   Height="50"
                   Width="{Binding ActualWidth, ElementName=VideoCanvas}"
                   Name="ControlPanel">
-                <Grid.Background>
-                    <SolidColorBrush>Red</SolidColorBrush>
-                    <!--<LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5, 1">
-                        <GradientStop Color="#00000000" Offset="0.0" />
-                        <GradientStop Color="#55000000" Offset="1.0"></GradientStop>
-                    </LinearGradientBrush>-->
-                </Grid.Background>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Button Click="Fullscreen_Clicked"
+            <Grid.Background>
+                <SolidColorBrush>Red</SolidColorBrush>
+            </Grid.Background>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Click="Fullscreen_Clicked"
                         Margin="10, 10"
                         Grid.Column="0">
-                    FullScreen
-                </Button>
-                <Button Name="PauseToggle" 
+                FullScreen
+            </Button>
+            <Button Name="PauseToggle" 
                         Click="Pause_Toggle"
                         Margin="10, 10"
                         Grid.Column="1">
-                    Pause
-                </Button>
-                <Label Grid.Column="2">
-                    Huh
-                </Label>
-            </Grid>
-        </Canvas>
-    </vlc:VideoView>
+                Pause
+            </Button>
+            <Label Grid.Column="2">
+                Huh
+            </Label>
+        </Grid>
+    </Canvas>
+    </vlc:VideoView>-->
 </UserControl>
