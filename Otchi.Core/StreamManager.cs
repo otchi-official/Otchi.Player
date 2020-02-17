@@ -156,38 +156,38 @@ namespace Otchi.Core
             Logger.Info($"Torrent State changed from: {e.OldState} to: {e.NewState}");
 
             if (e.OldState == TorrentState.Metadata && e.NewState != TorrentState.Error)
-                TorrentMetadataLoaded.Invoke(sender, e);
+                TorrentMetadataLoaded.Invoke(this, e);
             switch (e.NewState)
             {
                 case TorrentState.Error:
-                    TorrentError.Invoke(sender, e);
+                    TorrentError.Invoke(this, e);
                     break;
                 case TorrentState.Stopped:
-                    TorrentStopped.Invoke(sender, e);
+                    TorrentStopped.Invoke(this, e);
                     break;
                 case TorrentState.Paused:
-                    TorrentPaused.Invoke(sender, e);
+                    TorrentPaused.Invoke(this, e);
                     break;
                 case TorrentState.Starting:
-                    TorrentStarting.Invoke(sender, e);
+                    TorrentStarting.Invoke(this, e);
                     break;
                 case TorrentState.Downloading:
-                    TorrentDownloading.Invoke(sender, e);
+                    TorrentDownloading.Invoke(this, e);
                     break;
                 case TorrentState.Seeding:
-                    TorrentSeeding.Invoke(sender, e);
+                    TorrentSeeding.Invoke(this, e);
                     break;
                 case TorrentState.Hashing:
-                    TorrentHashing.Invoke(sender, e);
+                    TorrentHashing.Invoke(this, e);
                     break;
                 case TorrentState.HashingPaused:
-                    TorrentHashingPaused.Invoke(sender, e);
+                    TorrentHashingPaused.Invoke(this, e);
                     break;
                 case TorrentState.Stopping:
-                    TorrentStopping.Invoke(sender, e);
+                    TorrentStopping.Invoke(this, e);
                     break;
                 case TorrentState.Metadata:
-                    TorrentMetadata.Invoke(sender, e);
+                    TorrentMetadata.Invoke(this, e);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(e));

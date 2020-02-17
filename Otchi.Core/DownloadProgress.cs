@@ -11,7 +11,7 @@ using Otchi.Core.EventArgs;
 
 namespace Otchi.Core
 {
-    public class DownloadProgress : IEnumerable<DownloadRange>, IDisposable
+    public sealed class DownloadProgress : IEnumerable<DownloadRange>, IDisposable
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -140,7 +140,7 @@ namespace Otchi.Core
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool dispose)
+        private void Dispose(bool dispose)
         {
             if (dispose) _workSemaphore.Dispose();
         }
